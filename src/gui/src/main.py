@@ -3,6 +3,7 @@
 #ROS imports
 import rospy
 from std_msgs.msg import Int32
+from std_msgs.msg import String
 
 import sys 
 import os
@@ -10,7 +11,6 @@ from python_qt_binding.QtCore import QPropertyAnimation, Qt
 from python_qt_binding.QtGui import QColor 
 from python_qt_binding.QtWidgets import QApplication, QGraphicsDropShadowEffect, QMainWindow, QSizeGrip
 #from PySide2.QtWidgets import QApplication, QMainWindow, QGraphicsDropShadowEffect, QSizeGrip
-
 
 #import Qt Material for style sheet
 from qt_material import *
@@ -26,7 +26,6 @@ class MainWindow(QMainWindow):
 
         #ROS node initilization
         rospy.init_node('GUI_node', anonymous=True)
-
 
         apply_stylesheet(app, theme='dark_cyan.xml')
 
@@ -66,7 +65,7 @@ class MainWindow(QMainWindow):
         self.ui.statistics_button.clicked.connect(lambda:self.ui.stackedWidget.setCurrentWidget(self.ui.statistics_widget))
         self.ui.menu_button.clicked.connect(lambda:self.menuAnimation())
 
-        # To move the window 
+        # To move the window on screen
         def moveWindow(e):
             if self.isMaximized() == False:
                 if e.buttons() == Qt.LeftButton:
@@ -75,7 +74,14 @@ class MainWindow(QMainWindow):
                     e.accept()
         self.ui.header_frame.mouseMoveEvent = moveWindow
 
-        #self.ui.horizontalSlider.SliderValueChange.connect(lambda:self.pubSpeed())
+        #Publish integer value when user use the slider to change the value
+        self.ui.horizontalSlider.valueChanged.connect(lambda:self.pubSpeed(self.ui.horizontalSlider.value()))
+
+        #Publish Automode or joystick mode 
+        self.ui.autoMode.setCheckable(True)
+        self.ui.autoMode.clicked.connect(lambda:self.driveModeSelection())
+        self.ui.joystickMode.setCheckable(True)
+        self.ui.joystickMode.clicked.connect(lambda:self.driveModeSelection())
 
         self.show()
 
@@ -84,13 +90,10 @@ class MainWindow(QMainWindow):
         width = self.ui.leftMenuList_frame.width()
         #if minimized
         if width == 40:
-            #print(width)
             extendWidth = 200
-            #print(extendWidth)
         #if maximized
         else:
             extendWidth = 40
-            #print(extendWidth)
 
         #Transisition animation 
         self.animation = QPropertyAnimation(self.ui.leftMenuList_frame, b"minimumWidth") #Animate minimumWidth
@@ -113,10 +116,22 @@ class MainWindow(QMainWindow):
             self.showMaximized()    
     
     #Publish the wheelChairSpeed value when user changes the speed 
-    """def pubSpeed(self):
-        print("speed")
+    def pubSpeed(self, value):
         pub = rospy.Publisher('wheelChairSpeed', Int32, queue_size=10)
-"""
+        rospy.loginfo(value)
+        pub.publish(value)
+
+    #Publish wheel chair drive mode 
+    def driveModeSelection(self):
+        pub = rospy.Publisher('driveMode', String, queue_size=10)
+        source = self.sender()
+        if source == self.ui.autoMode:
+            rospy.loginfo("Auto mode selected")
+            pub.publish("Auto")
+        else:
+            rospy.loginfo("Joystick mode selected")
+            pub.publish("Manual")
+
 if __name__=="__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
