@@ -7,8 +7,8 @@
 # WARNING! All changes made in this file will be lost!
 
 
-from python_qt_binding import QtCore, QtGui, QtWidgets
-
+from PyQt5 import QtCore, QtGui, QtWidgets
+import images_rc
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -49,7 +49,7 @@ class Ui_MainWindow(object):
         self.menu_button.setFont(font)
         self.menu_button.setStyleSheet("color: rgb(255, 255, 255);")
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap("images/icons/icon_menu.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon.addPixmap(QtGui.QPixmap(":/icons/icons/cil-menu.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.menu_button.setIcon(icon)
         self.menu_button.setIconSize(QtCore.QSize(32, 32))
         self.menu_button.setAutoDefault(False)
@@ -155,7 +155,7 @@ class Ui_MainWindow(object):
         self.navigation_button = QtWidgets.QPushButton(self.menuList)
         self.navigation_button.setText("")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap("images/icons/cil-map.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon4.addPixmap(QtGui.QPixmap(":/icons/icons/cil-map.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.navigation_button.setIcon(icon4)
         self.navigation_button.setIconSize(QtCore.QSize(42, 42))
         self.navigation_button.setObjectName("navigation_button")
@@ -172,7 +172,7 @@ class Ui_MainWindow(object):
         self.battery_button = QtWidgets.QPushButton(self.menuList)
         self.battery_button.setText("")
         icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap("images/icons/cil-battery-5.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon5.addPixmap(QtGui.QPixmap(":/icons/icons/cil-battery-5.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.battery_button.setIcon(icon5)
         self.battery_button.setIconSize(QtCore.QSize(42, 42))
         self.battery_button.setObjectName("battery_button")
@@ -180,7 +180,7 @@ class Ui_MainWindow(object):
         self.speedSel_button = QtWidgets.QPushButton(self.menuList)
         self.speedSel_button.setText("")
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap("images/icons/cil-speedometer.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon6.addPixmap(QtGui.QPixmap(":/icons/icons/cil-speedometer.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.speedSel_button.setIcon(icon6)
         self.speedSel_button.setIconSize(QtCore.QSize(42, 42))
         self.speedSel_button.setObjectName("speedSel_button")
@@ -188,7 +188,7 @@ class Ui_MainWindow(object):
         self.modeSel_button = QtWidgets.QPushButton(self.menuList)
         self.modeSel_button.setText("")
         icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap("images/icons/cil-settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon7.addPixmap(QtGui.QPixmap(":/icons/icons/cil-settings.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.modeSel_button.setIcon(icon7)
         self.modeSel_button.setIconSize(QtCore.QSize(42, 42))
         self.modeSel_button.setObjectName("modeSel_button")
@@ -196,7 +196,7 @@ class Ui_MainWindow(object):
         self.statistics_button = QtWidgets.QPushButton(self.menuList)
         self.statistics_button.setText("")
         icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap("images/icons/cil-chart.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        icon8.addPixmap(QtGui.QPixmap(":/icons/icons/cil-chart.png"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
         self.statistics_button.setIcon(icon8)
         self.statistics_button.setIconSize(QtCore.QSize(42, 42))
         self.statistics_button.setObjectName("statistics_button")
@@ -470,3 +470,4 @@ class Ui_MainWindow(object):
         self.display_version.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffffff;\">N/A</span></p></body></html>"))
         self.copyrights.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffffff;\">INTEREG</span></p></body></html>"))
         self.footer_helpButton.setText(_translate("MainWindow", "?"))
+import images_rc

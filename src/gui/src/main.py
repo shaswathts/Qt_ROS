@@ -2,6 +2,7 @@
 
 #ROS imports
 import rospy
+from std_msgs.msg import Int32
 
 import sys 
 import os
@@ -72,9 +73,10 @@ class MainWindow(QMainWindow):
                     self.move(self.pos() + e.globalPos() - self.cursorPosition)
                     self.cursorPosition = e.globalPos()
                     e.accept()
-
         self.ui.header_frame.mouseMoveEvent = moveWindow
-        
+
+        #self.ui.horizontalSlider.SliderValueChange.connect(lambda:self.pubSpeed())
+
         self.show()
 
     # Animation for menu button
@@ -110,7 +112,11 @@ class MainWindow(QMainWindow):
         else:
             self.showMaximized()    
     
-
+    #Publish the wheelChairSpeed value when user changes the speed 
+    """def pubSpeed(self):
+        print("speed")
+        pub = rospy.Publisher('wheelChairSpeed', Int32, queue_size=10)
+"""
 if __name__=="__main__":
     app = QApplication(sys.argv)
     window = MainWindow()
