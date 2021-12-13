@@ -18,6 +18,9 @@ from qt_material import *
 #import GUI file
 from ui_interface import *
 
+#swril lib
+import swri_transform_util
+
 class MainWindow(QMainWindow):
     def __init__(self):
         QMainWindow.__init__(self)

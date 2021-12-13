@@ -475,11 +475,7 @@ background-color: rgb(52, 101, 164);
              <number>0</number>
             </property>
             <widget class="QWidget" name="navigation_widget">
-             <layout class="QVBoxLayout" name="verticalLayout_8">
-              <item>
-               <widget class="QGraphicsView" name="graphicsView"/>
-              </item>
-             </layout>
+             <layout class="QVBoxLayout" name="verticalLayout_8"/>
             </widget>
             <widget class="QWidget" name="battery_widget">
              <layout class="QVBoxLayout" name="verticalLayout_4">
@@ -927,6 +923,7 @@ background-color: rgb(136, 138, 133);</string>
     </item>
    </layout>
   </widget>
+  <widget class="QStatusBar" name="statusBar"/>
  </widget>
  <resources>
   <include location="images/images.qrc"/>
