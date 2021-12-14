@@ -475,7 +475,15 @@ background-color: rgb(52, 101, 164);
              <number>0</number>
             </property>
             <widget class="QWidget" name="navigation_widget">
-             <layout class="QVBoxLayout" name="verticalLayout_8"/>
+             <layout class="QVBoxLayout" name="verticalLayout_8">
+              <item>
+               <widget class="QOpenGLWidget" name="display_map">
+                <property name="styleSheet">
+                 <string notr="true">background-color: rgb(0, 0, 0);</string>
+                </property>
+               </widget>
+              </item>
+             </layout>
             </widget>
             <widget class="QWidget" name="battery_widget">
              <layout class="QVBoxLayout" name="verticalLayout_4">
