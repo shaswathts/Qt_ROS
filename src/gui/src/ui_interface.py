@@ -7,7 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 
-from PyQt5 import QtCore, QtGui, QtWidgets
+from python_qt_binding import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainWindow(object):
@@ -213,12 +213,8 @@ class Ui_MainWindow(object):
         self.stackedWidget.setObjectName("stackedWidget")
         self.navigation_widget = QtWidgets.QWidget()
         self.navigation_widget.setObjectName("navigation_widget")
-        self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.navigation_widget)
-        self.verticalLayout_8.setObjectName("verticalLayout_8")
-        self.display_map = QtWidgets.QOpenGLWidget(self.navigation_widget)
-        self.display_map.setStyleSheet("background-color: rgb(0, 0, 0);")
-        self.display_map.setObjectName("display_map")
-        self.verticalLayout_8.addWidget(self.display_map)
+        #self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.navigation_widget)
+        #self.verticalLayout_8.setObjectName("verticalLayout_8")
         self.stackedWidget.addWidget(self.navigation_widget)
         self.battery_widget = QtWidgets.QWidget()
         self.battery_widget.setObjectName("battery_widget")
@@ -429,9 +425,6 @@ class Ui_MainWindow(object):
         self.horizontalLayout_5.addWidget(self.window_resize, 0, QtCore.Qt.AlignBottom)
         self.verticalLayout.addWidget(self.footer_frame, 0, QtCore.Qt.AlignBottom)
         MainWindow.setCentralWidget(self.centralwidget)
-        self.statusBar = QtWidgets.QStatusBar(MainWindow)
-        self.statusBar.setObjectName("statusBar")
-        MainWindow.setStatusBar(self.statusBar)
 
         self.retranslateUi(MainWindow)
         self.stackedWidget.setCurrentIndex(0)
