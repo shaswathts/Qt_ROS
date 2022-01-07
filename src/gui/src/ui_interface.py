@@ -7,7 +7,7 @@
 # WARNING! All changes made in this file will be lost!
 
 
-from python_qt_binding import QtCore, QtGui, QtWidgets
+from PyQt5 import QtCore, QtGui, QtWidgets
 
 
 class Ui_MainWindow(object):
@@ -213,8 +213,12 @@ class Ui_MainWindow(object):
         self.stackedWidget.setObjectName("stackedWidget")
         self.navigation_widget = QtWidgets.QWidget()
         self.navigation_widget.setObjectName("navigation_widget")
-        #self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.navigation_widget)
-        #self.verticalLayout_8.setObjectName("verticalLayout_8")
+        self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.navigation_widget)
+        self.verticalLayout_8.setObjectName("verticalLayout_8")
+        self.graphicsView = QtWidgets.QGraphicsView(self.navigation_widget)
+        self.graphicsView.setRenderHints(QtGui.QPainter.TextAntialiasing)
+        self.graphicsView.setObjectName("graphicsView")
+        self.verticalLayout_8.addWidget(self.graphicsView)
         self.stackedWidget.addWidget(self.navigation_widget)
         self.battery_widget = QtWidgets.QWidget()
         self.battery_widget.setObjectName("battery_widget")
@@ -468,3 +472,13 @@ class Ui_MainWindow(object):
         self.copyrights.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffffff;\">INTEREG</span></p></body></html>"))
         self.footer_helpButton.setText(_translate("MainWindow", "?"))
 import images_rc
+
+
+if __name__ == "__main__":
+    import sys
+    app = QtWidgets.QApplication(sys.argv)
+    MainWindow = QtWidgets.QMainWindow()
+    ui = Ui_MainWindow()
+    ui.setupUi(MainWindow)
+    MainWindow.show()
+    sys.exit(app.exec_())

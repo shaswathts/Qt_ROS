@@ -9,8 +9,8 @@ from geometry_msgs.msg import PointStamped
 
 import sys 
 import os
-from python_qt_binding.QtCore import QPropertyAnimation, Qt
-from python_qt_binding.QtGui import QColor 
+from python_qt_binding.QtCore import QPropertyAnimation, Qt, QLineF
+from python_qt_binding.QtGui import QColor, QPen 
 from python_qt_binding.QtWidgets import QApplication, QGraphicsDropShadowEffect, QMainWindow, QSizeGrip, QOpenGLWidget
 from python_qt_binding import QtOpenGL
 #from PySide2.QtWidgets import QApplication, QMainWindow, QGraphicsDropShadowEffect, QSizeGrip
@@ -26,6 +26,8 @@ from ui_interface import *
 
 #import GLMap
 from GLMap import *
+from cordPick import *
+from smpxy import MyFrame
 
 
 class MainWindow(QMainWindow):
@@ -53,14 +55,21 @@ class MainWindow(QMainWindow):
         self.ui.setupUi(self) 
 
         # Set up the OpenGL window
-        self.glWidget = GLWidget(self)
+        #self.glWidget = GLWidget(self)
+        #self.initGUI()
+
+        self.axis = MyFrame()
         self.initGUI()
 
+        self.setMouseTracking(True)
+
         # Create a timer and connect its signal to the QGLWidget update function
+        """
         timer = QtCore.QTimer(self)
         timer.setInterval(20)   # period, in milliseconds
         timer.timeout.connect(self.glWidget.updateGL)
         timer.start()
+        """
 
         # ROS node initilization
         rospy.init_node('GUI_node', anonymous=True)
@@ -134,14 +143,27 @@ class MainWindow(QMainWindow):
            (None)
         
         """
-
+        """
         main_widget = self.ui.navigation_widget
         main_widget_layout = QVBoxLayout()
         main_widget.setLayout(main_widget_layout)
-
         #self.setCentralWidget(central_widget)
-
         main_widget_layout.addWidget(self.glWidget)
+        """
+
+        self.scene = QGraphicsScene()
+        self.ui.graphicsView.setScene(self.scene)
+
+        # http://pyqt.sourceforge.net/Docs/PyQt5/qpen.html
+        self.pencilX = QPen( Qt.red, 1 )
+        self.pencilY = QPen( Qt.green, 1 )
+        self.pencilX.setStyle( Qt.SolidLine )
+        self.pencilY.setStyle( Qt.SolidLine )
+
+        self.scene.addLine( QLineF( 0, 0, 50, 0 ), self.pencilX )
+        self.scene.addLine( QLineF( 0, -50, 0, 0 ), self.pencilY )
+        
+        print("All set graphics")
     
     # Animation for menu button
     def menuAnimation(self):
