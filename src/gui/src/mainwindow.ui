@@ -478,8 +478,38 @@ background-color: rgb(52, 101, 164);
              <layout class="QVBoxLayout" name="verticalLayout_8">
               <item>
                <widget class="QGraphicsView" name="graphicsView">
+                <property name="enabled">
+                 <bool>true</bool>
+                </property>
+                <property name="verticalScrollBarPolicy">
+                 <enum>Qt::ScrollBarAlwaysOff</enum>
+                </property>
+                <property name="horizontalScrollBarPolicy">
+                 <enum>Qt::ScrollBarAlwaysOff</enum>
+                </property>
+                <property name="sizeAdjustPolicy">
+                 <enum>QAbstractScrollArea::AdjustToContents</enum>
+                </property>
+                <property name="backgroundBrush">
+                 <brush brushstyle="NoBrush">
+                  <color alpha="255">
+                   <red>30</red>
+                   <green>30</green>
+                   <blue>30</blue>
+                  </color>
+                 </brush>
+                </property>
                 <property name="renderHints">
                  <set>QPainter::TextAntialiasing</set>
+                </property>
+                <property name="dragMode">
+                 <enum>QGraphicsView::NoDrag</enum>
+                </property>
+                <property name="transformationAnchor">
+                 <enum>QGraphicsView::AnchorUnderMouse</enum>
+                </property>
+                <property name="resizeAnchor">
+                 <enum>QGraphicsView::AnchorUnderMouse</enum>
                 </property>
                </widget>
               </item>

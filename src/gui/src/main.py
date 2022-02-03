@@ -6,6 +6,7 @@ from std_msgs.msg import String
 from std_msgs.msg import Int32
 from std_msgs.msg import Float32
 from geometry_msgs.msg import PointStamped
+import tf2_ros
 
 import sys 
 import os
@@ -24,10 +25,11 @@ from qt_material import *
 #import GUI file
 from ui_interface import *
 
+from GItems import Graphicsscene
 #import GLMap
-from GLMap import *
-from cordPick import *
-from smpxy import MyFrame
+#from GLMap import *
+#from cordPick import *
+#from smpxy import MyFrame
 
 
 class MainWindow(QMainWindow):
@@ -58,10 +60,8 @@ class MainWindow(QMainWindow):
         #self.glWidget = GLWidget(self)
         #self.initGUI()
 
-        self.axis = MyFrame()
+        #self.axis = MyFrame()
         self.initGUI()
-
-        self.setMouseTracking(True)
 
         # Create a timer and connect its signal to the QGLWidget update function
         """
@@ -71,10 +71,7 @@ class MainWindow(QMainWindow):
         timer.start()
         """
 
-        # ROS node initilization
-        rospy.init_node('GUI_node', anonymous=True)
-
-        apply_stylesheet(app, theme='dark_cyan.xml')
+        #apply_stylesheet(app, theme='dark_cyan.xml')
 
         # Remove window title bar
         self.setWindowFlags(QtCore.Qt.FramelessWindowHint)
@@ -121,9 +118,12 @@ class MainWindow(QMainWindow):
                     e.accept()
 
         self.ui.header_frame.mouseMoveEvent = moveWindow
+        self.ui.graphicsView.mousePressEvent = self.mouseEvent
+        self.ui.graphicsView.mouseMoveEvent = self.toggleDragMode
 
         # Publish integer value when user use the slider to change the value
         self.ui.horizontalSlider.valueChanged.connect(lambda:self.pubSpeed(self.ui.horizontalSlider.value()))
+        self.ui.horizontalSlider.valueChanged.connect(lambda:self.rotate_item(self.ui.horizontalSlider.value()))
 
         # Publish Automode or joystick mode 
         self.ui.autoMode.setCheckable(True)
@@ -143,27 +143,129 @@ class MainWindow(QMainWindow):
            (None)
         
         """
-        """
-        main_widget = self.ui.navigation_widget
-        main_widget_layout = QVBoxLayout()
-        main_widget.setLayout(main_widget_layout)
-        #self.setCentralWidget(central_widget)
-        main_widget_layout.addWidget(self.glWidget)
-        """
 
-        self.scene = QGraphicsScene()
-        self.ui.graphicsView.setScene(self.scene)
+        self.zoom = 2
+        self.angle = 0
+        self._empty = True
+        self._scene = QtWidgets.QGraphicsScene()
+        self._photo = QtWidgets.QGraphicsPixmapItem()    
+        self._view = Graphicsscene()
+        self.ui.graphicsView.setMouseTracking(True)
 
-        # http://pyqt.sourceforge.net/Docs/PyQt5/qpen.html
-        self.pencilX = QPen( Qt.red, 1 )
-        self.pencilY = QPen( Qt.green, 1 )
-        self.pencilX.setStyle( Qt.SolidLine )
-        self.pencilY.setStyle( Qt.SolidLine )
-
-        self.scene.addLine( QLineF( 0, 0, 50, 0 ), self.pencilX )
-        self.scene.addLine( QLineF( 0, -50, 0, 0 ), self.pencilY )
+        self.ui.graphicsView.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.ui.graphicsView.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.ui.graphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.ui.graphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         
-        print("All set graphics")
+        self.setPhoto(QtGui.QPixmap('/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm'))
+        robot = self._view.addRobot()
+        self._scene.addItem(robot)
+        robot.setZValue(500)
+        
+        self.objPose()
+        for cluster in self.cluster:
+            self._scene.addItem(cluster)
+            cluster.setZValue(500)
+            cluster.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
+            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+        self._photo.setPos(130, 130)
+        self._scene.addItem(self._photo)
+        self.ui.graphicsView.setScene(self._scene)
+        #self.toggleDragMode()
+        
+    # Get cluster data from the TF buffer from semantic map(dbscan)
+    def objPose(self):
+        i = 0
+        get_pose = True
+        self.cluster_list = []
+        pix_scale = 37 #rospy.get_param('pixel_scale')
+
+        tfBuffer = tf2_ros.Buffer()
+        listener = tf2_ros.TransformListener(tfBuffer)
+        
+        while get_pose:
+            i = i+1
+            print('cluster' + str(i))
+            try:
+                trans = tfBuffer.lookup_transform("map", "cluster"+str(i), rospy.Time(0), rospy.Duration(5))
+                cluster = [trans.transform.translation.x * pix_scale, trans.transform.translation.y * pix_scale]
+                self.cluster_list.append(cluster)
+            except (tf2_ros.LookupException):
+                get_pose = False
+                continue
+
+        trans2 = tfBuffer.lookup_transform("map", "d435_color_optical_frame", rospy.Time(0), rospy.Duration(5))
+        self.cluster_list.append([trans2.transform.translation.x * pix_scale, trans2.transform.translation.y * pix_scale])
+        
+        self.cluster = self._view.objDet(self.cluster_list)
+    
+    # Map image is true/false
+    def hasPhoto(self):
+        return not self._empty  
+
+    # Update the graphic window after changes
+    def updateView(self):
+        #self.ui.graphicsView.setTransform(QtGui.QTransform().scale(self.zoom, self.zoom).rotate(self.angle))
+        transform = QtGui.QTransform()
+        transform.scale(self.zoom, self.zoom)
+        transform.rotate(self.angle)
+        self.ui.graphicsView.setTransform(transform)
+
+    # Initilization of map image
+    def setPhoto(self, pixmap=None):
+        if pixmap and not pixmap.isNull():
+            self._empty = False
+            self._photo.setPixmap(pixmap)
+        else:
+            self._empty = True
+            self._photo.setPixmap(QtGui.QPixmap())
+        self.updateView()
+
+    # Capturing mouse wheel events to zoom in/out
+    def wheelEvent(self, event):
+        if self.hasPhoto():
+            moose = event.angleDelta().y()/120
+            if moose > 0:
+                self.zoomIn()
+            elif moose < 0:
+                self.zoomOut()
+    
+    def zoomIn(self):
+        self.zoom *= 1.05
+        self.updateView()
+
+    def zoomOut(self):
+        self.zoom /= 1.05
+        self.updateView()
+
+    def zoomReset(self):
+        self.zoom = 1
+        self.updateView()
+
+    # To get the pixel cordinates from the map image
+    def mouseEvent(self, event):
+        if self.hasPhoto:
+            if self._photo.isUnderMouse() and event.buttons() == Qt.MiddleButton:
+                print(self.ui.graphicsView.mapToScene(event.pos()).toPoint())
+
+    # Rotate the map with respect to the pose frame orientation 
+    def rotate_item (self, value) :
+        self.angle = value 
+        self.updateView() 
+
+    # Drag function         
+    def toggleDragMode(self, event):
+        '''if event.buttons() == QtCore.Qt.RightButton:
+            if self.hasPhoto():
+                self.ui.graphicsView.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
+            else:
+                self.ui.graphicsView.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+                #self.image = False'''
+
+        if self.ui.graphicsView.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
+            self.ui.graphicsView.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        elif not self._photo.pixmap().isNull():
+            self.ui.graphicsView.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
     
     # Animation for menu button
     def menuAnimation(self):
@@ -186,10 +288,6 @@ class MainWindow(QMainWindow):
     # To obtain the X,y cordinates when mouse click 
     def mousePressEvent(self, event):
         self.cursorPosition = event.globalPos()
-        #print(self.cursorPosition)
-        pub = rospy.Publisher('pointStamped', PointStamped, queue_size=10)
-        rospy.loginfo(self.cursorPosition)
-        pub.publish(self.cursorPosition)
 
     # Maximize window function
     def restore_or_maximize_window(self):
@@ -220,6 +318,10 @@ class MainWindow(QMainWindow):
 
 if __name__=="__main__":
     app = QApplication(sys.argv)
+    
+    # ROS node initilization
+    rospy.init_node('GUI_node', anonymous=True)
+    
     window = MainWindow()
     window.show()
     sys.exit(app.exec_())

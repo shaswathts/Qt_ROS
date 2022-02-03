@@ -2,13 +2,11 @@
 
 # Form implementation generated from reading ui file 'mainwindow.ui'
 #
-# Created by: PyQt5 UI code generator 5.14.1
+# Created by: PyQt5 UI code generator 5.10.1
 #
 # WARNING! All changes made in this file will be lost!
 
-
 from PyQt5 import QtCore, QtGui, QtWidgets
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -216,7 +214,17 @@ class Ui_MainWindow(object):
         self.verticalLayout_8 = QtWidgets.QVBoxLayout(self.navigation_widget)
         self.verticalLayout_8.setObjectName("verticalLayout_8")
         self.graphicsView = QtWidgets.QGraphicsView(self.navigation_widget)
+        self.graphicsView.setEnabled(True)
+        self.graphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.graphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.graphicsView.setSizeAdjustPolicy(QtWidgets.QAbstractScrollArea.AdjustToContents)
+        brush = QtGui.QBrush(QtGui.QColor(30, 30, 30))
+        brush.setStyle(QtCore.Qt.NoBrush)
+        self.graphicsView.setBackgroundBrush(brush)
         self.graphicsView.setRenderHints(QtGui.QPainter.TextAntialiasing)
+        self.graphicsView.setDragMode(QtWidgets.QGraphicsView.NoDrag)
+        self.graphicsView.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
+        self.graphicsView.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.graphicsView.setObjectName("graphicsView")
         self.verticalLayout_8.addWidget(self.graphicsView)
         self.stackedWidget.addWidget(self.navigation_widget)
@@ -471,8 +479,8 @@ class Ui_MainWindow(object):
         self.display_version.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffffff;\">N/A</span></p></body></html>"))
         self.copyrights.setText(_translate("MainWindow", "<html><head/><body><p><span style=\" color:#ffffff;\">INTEREG</span></p></body></html>"))
         self.footer_helpButton.setText(_translate("MainWindow", "?"))
-import images_rc
 
+import images_rc
 
 if __name__ == "__main__":
     import sys
@@ -482,3 +490,4 @@ if __name__ == "__main__":
     ui.setupUi(MainWindow)
     MainWindow.show()
     sys.exit(app.exec_())
+
