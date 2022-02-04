@@ -10,7 +10,7 @@ import tf2_ros
 
 import sys 
 import os
-from python_qt_binding.QtCore import QPropertyAnimation, Qt, QLineF
+from python_qt_binding.QtCore import QPropertyAnimation, Qt, QLineF, QPointF
 from python_qt_binding.QtGui import QColor, QPen 
 from python_qt_binding.QtWidgets import QApplication, QGraphicsDropShadowEffect, QMainWindow, QSizeGrip, QOpenGLWidget
 from python_qt_binding import QtOpenGL
@@ -162,13 +162,13 @@ class MainWindow(QMainWindow):
         self._scene.addItem(robot)
         robot.setZValue(500)
         
-        self.objPose()
+        '''self.objPose()
         for cluster in self.cluster:
             self._scene.addItem(cluster)
             cluster.setZValue(500)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
-        self._photo.setPos(130, 130)
+            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)'''
+
         self._scene.addItem(self._photo)
         self.ui.graphicsView.setScene(self._scene)
         #self.toggleDragMode()
@@ -210,6 +210,9 @@ class MainWindow(QMainWindow):
         transform.scale(self.zoom, self.zoom)
         transform.rotate(self.angle)
         self.ui.graphicsView.setTransform(transform)
+        #self._photo.setTransformOriginPoint(QPointF(int(self.angle), int(self.angle)))
+        #self._photo.setPos(self.angle, self.angle)
+        #self.ui.graphicsView.mapFromScene(event.pos())
 
     # Initilization of map image
     def setPhoto(self, pixmap=None):
@@ -246,11 +249,12 @@ class MainWindow(QMainWindow):
     def mouseEvent(self, event):
         if self.hasPhoto:
             if self._photo.isUnderMouse() and event.buttons() == Qt.MiddleButton:
-                print(self.ui.graphicsView.mapToScene(event.pos()).toPoint())
+                print(self.ui.graphicsView.mapToScene(event.pos()))#.toPoint())
 
     # Rotate the map with respect to the pose frame orientation 
     def rotate_item (self, value) :
         self.angle = value 
+        #self.ui.graphicsView.mapToScene(event.pos())
         self.updateView() 
 
     # Drag function         
