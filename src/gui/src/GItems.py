@@ -11,13 +11,11 @@ from python_qt_binding.QtGui import QImage, QPixmap, QPen
 from python_qt_binding.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup, QGraphicsLineItem
 #from cordPick import MouseTracker
 
-from PIL import Image, ImageQt, ImageEnhance
 
 class Graphicsscene(object):
     def __init__(self):
         object.__init__(self)
         #self.setSceneRect(-100, -100, 200, 200)     
-   
 
     def addAxisItem(self):
         pencilX = QPen( Qt.red, 1 )
@@ -41,7 +39,7 @@ class Graphicsscene(object):
 
     def addRobot(self):
         ellipse = QtWidgets.QGraphicsEllipseItem(0, 0, 10, 10)
-        ellipse.setPos(182.0, 116.0)
+        ellipse.setPos(190.0, 190.0)
 
         brush = QtGui.QBrush(Qt.GlobalColor.blue)
         ellipse.setBrush(brush)

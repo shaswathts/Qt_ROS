@@ -26,6 +26,9 @@ from qt_material import *
 from ui_interface import *
 
 from GItems import Graphicsscene
+import numpy as np
+import cv2
+from cv_transform import opencv
 #import GLMap
 #from GLMap import *
 #from cordPick import *
@@ -144,20 +147,39 @@ class MainWindow(QMainWindow):
         
         """
 
-        self.zoom = 2
-        self.angle = 0
-        self._empty = True
-        self._scene = QtWidgets.QGraphicsScene()
-        self._photo = QtWidgets.QGraphicsPixmapItem()    
-        self._view = Graphicsscene()
         self.ui.graphicsView.setMouseTracking(True)
-
         self.ui.graphicsView.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.ui.graphicsView.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.ui.graphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.ui.graphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+
+        self.zoom = 2
+        self.angle = 20
+        self._empty = True
+        self._scene = QtWidgets.QGraphicsScene()
+        self._photo = QtWidgets.QGraphicsPixmapItem()
+        self._view = Graphicsscene()
+        self._cv = opencv()
+
+        # Draw the cluster pos on map image
+        #self.img = self._cv.cluster_pos()
+
+        # Draw the posistion of wheelchair w.r.t map's pixel location, translation & rotation robot_pos=[x,y,rad]
+        #self.rob = self._cv.drwa_rob(self.img, robot_pos=[self.angle, self.angle, self.angle])
         
-        self.setPhoto(QtGui.QPixmap('/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm'))
+        trans = [0, 0, 0] # (x, y, th)
+
+        self.rob = self._cv.transform(trans)
+
+        cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+        cv2.imshow('image', self.rob)
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+
+        
+        self.image = self.convert_cv_qt(self.rob)
+
+        self.setPhoto(self.image) #(QtGui.QPixmap('/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm'))
         robot = self._view.addRobot()
         self._scene.addItem(robot)
         robot.setZValue(500)
@@ -172,7 +194,17 @@ class MainWindow(QMainWindow):
         self._scene.addItem(self._photo)
         self.ui.graphicsView.setScene(self._scene)
         #self.toggleDragMode()
+
+    def convert_cv_qt(self, cv_img):
+        """Convert from an opencv image to QPixmap"""
         
+        rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
+        h, w, ch = rgb_image.shape
+        bytes_per_line = ch * w
+        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
+        
+        return QtGui.QPixmap.fromImage(convert_to_Qt_format)
+
     # Get cluster data from the TF buffer from semantic map(dbscan)
     def objPose(self):
         i = 0
@@ -208,7 +240,7 @@ class MainWindow(QMainWindow):
         #self.ui.graphicsView.setTransform(QtGui.QTransform().scale(self.zoom, self.zoom).rotate(self.angle))
         transform = QtGui.QTransform()
         transform.scale(self.zoom, self.zoom)
-        transform.rotate(self.angle)
+        transform.rotate(0)
         self.ui.graphicsView.setTransform(transform)
         #self._photo.setTransformOriginPoint(QPointF(int(self.angle), int(self.angle)))
         #self._photo.setPos(self.angle, self.angle)
