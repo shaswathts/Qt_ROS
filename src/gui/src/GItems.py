@@ -38,7 +38,7 @@ class Graphicsscene(object):
         return axisGrp
 
     def addRobot(self):
-        ellipse = QtWidgets.QGraphicsEllipseItem(0, 0, 10, 10)
+        ellipse = QtWidgets.QGraphicsEllipseItem(0, 0, 8, 8)
         ellipse.setPos(190.0, 190.0)
 
         brush = QtGui.QBrush(Qt.GlobalColor.blue)
@@ -50,7 +50,7 @@ class Graphicsscene(object):
 
         return ellipse
 
-    def objDet(self, cluster_list):
+    def cluster_obj(self, cluster_list):
 
         elipse_list = []
 

@@ -28,7 +28,7 @@ from ui_interface import *
 from GItems import Graphicsscene
 import numpy as np
 import cv2
-from cv_transform import opencv
+from cv_transform import UpdateTransformation, opencv
 #import GLMap
 #from GLMap import *
 #from cordPick import *
@@ -146,7 +146,6 @@ class MainWindow(QMainWindow):
            (None)
         
         """
-
         self.ui.graphicsView.setMouseTracking(True)
         self.ui.graphicsView.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.ui.graphicsView.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
@@ -160,16 +159,17 @@ class MainWindow(QMainWindow):
         self._photo = QtWidgets.QGraphicsPixmapItem()
         self._view = Graphicsscene()
         self._cv = opencv()
+        #self._clusters = self._view.cluster_obj()
 
         # Draw the cluster pos on map image
         #self.img = self._cv.cluster_pos()
 
         # Draw the posistion of wheelchair w.r.t map's pixel location, translation & rotation robot_pos=[x,y,rad]
         #self.rob = self._cv.drwa_rob(self.img, robot_pos=[self.angle, self.angle, self.angle])
-        
-        trans = [0, 0, 0] # (x, y, th)
-
-        self.rob = self._cv.transform(trans)
+        trans = [50, 90, 0]
+        trans = UpdateTransformation(trans) # (x, y, th)
+        #print(trans.transformation)
+        self.rob = self._cv.transform(trans) #trans.transformation
 
         cv2.namedWindow('image', cv2.WINDOW_NORMAL)
         cv2.imshow('image', self.rob)
@@ -184,12 +184,12 @@ class MainWindow(QMainWindow):
         self._scene.addItem(robot)
         robot.setZValue(500)
         
-        '''self.objPose()
+        self.cluster_pose()
         for cluster in self.cluster:
             self._scene.addItem(cluster)
             cluster.setZValue(500)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)'''
+            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
 
         self._scene.addItem(self._photo)
         self.ui.graphicsView.setScene(self._scene)
@@ -205,8 +205,17 @@ class MainWindow(QMainWindow):
         
         return QtGui.QPixmap.fromImage(convert_to_Qt_format)
 
+    def wheelchair_pose(self):
+        _get_pose = True
+        self.pose_list = []
+        i = 0
+        pose_list = []
+
+        tfBuffer = tf2_ros.Buffer()
+        listener = tf2_ros.TransformListener(tfBuffer)
+
     # Get cluster data from the TF buffer from semantic map(dbscan)
-    def objPose(self):
+    def cluster_pose(self):
         i = 0
         get_pose = True
         self.cluster_list = []
@@ -229,7 +238,7 @@ class MainWindow(QMainWindow):
         trans2 = tfBuffer.lookup_transform("map", "d435_color_optical_frame", rospy.Time(0), rospy.Duration(5))
         self.cluster_list.append([trans2.transform.translation.x * pix_scale, trans2.transform.translation.y * pix_scale])
         
-        self.cluster = self._view.objDet(self.cluster_list)
+        self.cluster = self._view.cluster_obj(self.cluster_list)
     
     # Map image is true/false
     def hasPhoto(self):

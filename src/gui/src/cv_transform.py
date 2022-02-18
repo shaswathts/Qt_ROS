@@ -4,7 +4,41 @@ import numpy as np
 import cv2
 
 
+class UpdateTransformation:
+    def __init__(self, transformation=[0, 0, 0], displacement=False, pre_xy=[]):
+        self.transformation = transformation
+        self._trans = opencv()
+        self._pos = displacement
+        self.pre_xy = pre_xy
+
+    def return_displacement(self):
+        if self._pos:
+            self._trans.transform(self._transformation)
+        else:
+            self._trans.get_displacement(self.pre_xy, self._transformation)
+
+    def return_transformation(self):
+        print("In ret_transformation calling openCV.transform")
+        
+
+    # Getter method
+    @property
+    def transformation(self):
+        #print("Getting value...")
+        self.return_displacement()
+        return self._transformation 
+    
+    # Setter method
+    @transformation.setter
+    def transformation(self, value):
+        #print("Setting value...")
+        if value[0] > 190:
+            raise ValueError("outside map boundary!")
+        self._transformation = value
+
+
 class opencv():
+    
     def __init__(self):# Load the image
         # cv2.IMREAD_COLOR = 1
         # cv2.IMREAD_GRAYSCALE = 0
@@ -71,7 +105,7 @@ class opencv():
     def remap_center(self, image, tran_vector):
         pass
 
-    def get_displacement(self, pre, trans, pivot=[0, 0]):
+    def get_displacement(self, pre, trans):
         # pre_pos takes the position of a vertex before transformation 
         # post_pos gives the position of pre_pos vertex after transformation
         
@@ -87,6 +121,7 @@ class opencv():
 
         mat_Rid = np.identity(2)
 
+        pivot=[0, 0]
         matR = cv2.getRotationMatrix2D((int(pivot[0]),int(pivot[1])), trans[2], 1) # mat_Rth = self.rotation_m
         mat_Rth = np.block([
             [matR],
@@ -123,14 +158,14 @@ class opencv():
             remap = list(map(lambda x: -x, trans_vector))
             #remap_perspective = self.get_displacement(center, remap)
             trans = self.draw_rob(trans)
-            #self.display(trans)
+            self.display(trans)
             return trans
 
         elif trans_vector[2] != 0:
             trans = self.translate(self.image, trans_vector)
             trans = self.rotate(trans, trans_vector, center)
             trans = self.draw_rob(trans)
-            #self.display(trans)
+            self.display(trans)
             return trans
             
     def display(self, trans):
@@ -140,7 +175,17 @@ class opencv():
                 break
         cv2.destroyAllWindows()
 
+'''def wheelchair_pose():
+    
+    for x in range(100):
+        t = [x, x, x]
+        xy = [x+10, x+17, x-3]
+        get_pose = False
+        h = UpdateTransformation(t, get_pose, xy)
+        h.transformation
 
+wheelchair_pose()
+'''
 #img = cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
 #rob = opencv()
 
