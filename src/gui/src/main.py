@@ -2,9 +2,7 @@
 
 #ROS imports
 import rospy
-from std_msgs.msg import String
-from std_msgs.msg import Int32
-from std_msgs.msg import Float32
+from std_msgs.msg import Int16, Int32, String
 from geometry_msgs.msg import PointStamped
 import tf2_ros
 
@@ -28,6 +26,7 @@ from ui_interface import *
 from GItems import Graphicsscene
 import numpy as np
 import cv2
+import random
 from cv_transform import UpdateTransformation, opencv
 #import GLMap
 #from GLMap import *
@@ -36,12 +35,12 @@ from cv_transform import UpdateTransformation, opencv
 
 
 class MainWindow(QMainWindow):
+    punched = QtCore.pyqtSignal()
     """
     This class defines the Qt widget for the application, to which we add Qt widgets for
     OpenGL graphics, user input, etc.
     
     """
-
     def __init__(self):
         """ Initialize the Qt MainWindow.
         
@@ -126,14 +125,19 @@ class MainWindow(QMainWindow):
 
         # Publish integer value when user use the slider to change the value
         self.ui.horizontalSlider.valueChanged.connect(lambda:self.pubSpeed(self.ui.horizontalSlider.value()))
-        self.ui.horizontalSlider.valueChanged.connect(lambda:self.rotate_item(self.ui.horizontalSlider.value()))
+        #self.ui.horizontalSlider.valueChanged.connect(lambda:self.wheelchair_pose(self.ui.horizontalSlider.value()))
+        
 
         # Publish Automode or joystick mode 
         self.ui.autoMode.setCheckable(True)
         self.ui.autoMode.clicked.connect(lambda:self.driveModeSelection())
         self.ui.joystickMode.setCheckable(True)
         self.ui.joystickMode.clicked.connect(lambda:self.driveModeSelection())
-        
+
+    def callback(self, data):
+        self.punched.emit()
+        rospy.spin()
+
     def initGUI(self):
         """ Initialize the Qt GUI elements for the main window.
         
@@ -152,7 +156,7 @@ class MainWindow(QMainWindow):
         self.ui.graphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.ui.graphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
-        self.zoom = 2
+        self.zoom = 1
         self.angle = 20
         self._empty = True
         self._scene = QtWidgets.QGraphicsScene()
@@ -166,20 +170,20 @@ class MainWindow(QMainWindow):
 
         # Draw the posistion of wheelchair w.r.t map's pixel location, translation & rotation robot_pos=[x,y,rad]
         #self.rob = self._cv.drwa_rob(self.img, robot_pos=[self.angle, self.angle, self.angle])
-        trans = [50, 90, 0]
-        trans = UpdateTransformation(trans) # (x, y, th)
+        #trans = [50, 90, 60]
+        #trans = UpdateTransformation(trans, True) # (x, y, th)
         #print(trans.transformation)
-        self.rob = self._cv.transform(trans) #trans.transformation
+        #self.rob = self._cv.transform(trans.transformation) #trans.transformation
 
-        cv2.namedWindow('image', cv2.WINDOW_NORMAL)
+        '''cv2.namedWindow('image', cv2.WINDOW_NORMAL)
         cv2.imshow('image', self.rob)
         cv2.waitKey(0)
-        cv2.destroyAllWindows()
+        cv2.destroyAllWindows()'''
 
         
-        self.image = self.convert_cv_qt(self.rob)
+        #self.image = self.convert_cv_qt(self.rob)
 
-        self.setPhoto(self.image) #(QtGui.QPixmap('/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm'))
+        #self.setPhoto(self.image) #(QtGui.QPixmap('/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm'))
         robot = self._view.addRobot()
         self._scene.addItem(robot)
         robot.setZValue(500)
@@ -190,7 +194,8 @@ class MainWindow(QMainWindow):
             cluster.setZValue(500)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
-
+        
+        #rospy.Subscriber("trigger", Int32, self.wheelchair_pose) #self.wheelchair_pose()
         self._scene.addItem(self._photo)
         self.ui.graphicsView.setScene(self._scene)
         #self.toggleDragMode()
@@ -199,20 +204,27 @@ class MainWindow(QMainWindow):
         """Convert from an opencv image to QPixmap"""
         
         rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
-        h, w, ch = rgb_image.shape
-        bytes_per_line = ch * w
-        convert_to_Qt_format = QtGui.QImage(rgb_image.data, w, h, bytes_per_line, QtGui.QImage.Format_RGB888)
-        
+        height, width, channel = rgb_image.shape
+        bytes_per_line = channel * width
+        convert_to_Qt_format = QtGui.QImage(rgb_image.data, width, height, bytes_per_line, QtGui.QImage.Format_RGB888)
+
         return QtGui.QPixmap.fromImage(convert_to_Qt_format)
 
+    @QtCore.pyqtSlot()
     def wheelchair_pose(self):
+        print ("In wheelchair_pose!")
         _get_pose = True
-        self.pose_list = []
-        i = 0
-        pose_list = []
+        x = random.randint(0, 190)
+        xy = [x, x+28, x]
+        for a in range(-180, 180):
+            s = round( float( "{:.02f}".format( np.sin( np.radians(a) ) * 100 ) ) ) // 2
+            #xy = [s, s, -a]
+        h = UpdateTransformation(xy, _get_pose)
+        self.image = self.convert_cv_qt(h.transformation) #h.transformation) #self.rob)
+        self.setPhoto(self.image)     
 
-        tfBuffer = tf2_ros.Buffer()
-        listener = tf2_ros.TransformListener(tfBuffer)
+        #h.transformation
+        #self.rob = self._cv.transform(h.transformation) #trans.transformation
 
     # Get cluster data from the TF buffer from semantic map(dbscan)
     def cluster_pose(self):
@@ -362,11 +374,17 @@ class MainWindow(QMainWindow):
             #print("Joystick mode selected")
 
 if __name__=="__main__":
+        
     app = QApplication(sys.argv)
     
     # ROS node initilization
     rospy.init_node('GUI_node', anonymous=True)
     
     window = MainWindow()
+    window.punched.connect(window.wheelchair_pose)
+    
+    rospy.Subscriber("/trigger", Int32, window.callback)
+    
+
     window.show()
     sys.exit(app.exec_())

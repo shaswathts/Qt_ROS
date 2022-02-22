@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+from time import sleep
 import numpy as np
 import cv2
 
@@ -13,9 +14,11 @@ class UpdateTransformation:
 
     def return_displacement(self):
         if self._pos:
-            self._trans.transform(self._transformation)
+            _img = self._trans.transform(self._transformation)
+            return _img
         else:
-            self._trans.get_displacement(self.pre_xy, self._transformation)
+            _shift = self._trans.get_displacement(self.pre_xy, self._transformation)
+            return _shift
 
     def return_transformation(self):
         print("In ret_transformation calling openCV.transform")
@@ -25,8 +28,8 @@ class UpdateTransformation:
     @property
     def transformation(self):
         #print("Getting value...")
-        self.return_displacement()
-        return self._transformation 
+        x = self.return_displacement()
+        return x #self._transformation 
     
     # Setter method
     @transformation.setter
@@ -155,36 +158,41 @@ class opencv():
         if trans_vector[2] == 0:
             trans = self.translate(self.image, trans_vector)
             # To update the position of wheelchair in the map take-away the transformation vector from the center/focus point
-            remap = list(map(lambda x: -x, trans_vector))
+            #remap = list(map(lambda x: -x, trans_vector))
             #remap_perspective = self.get_displacement(center, remap)
             trans = self.draw_rob(trans)
-            self.display(trans)
+            #self.display(trans)
             return trans
 
         elif trans_vector[2] != 0:
             trans = self.translate(self.image, trans_vector)
             trans = self.rotate(trans, trans_vector, center)
             trans = self.draw_rob(trans)
-            self.display(trans)
+            #self.display(trans)
             return trans
             
     def display(self, trans):
         while(1):
+            #cv2.namedWindow('image', cv2.WINDOW_NORMAL)
             cv2.imshow('image', trans)
-            if cv2.waitKey(20) & 0xFF == 27:
+            if not cv2.waitKey(1000) & 0xFF == 27:
                 break
         cv2.destroyAllWindows()
+        
+        return trans
 
 '''def wheelchair_pose():
-    
-    for x in range(100):
-        t = [x, x, x]
-        xy = [x+10, x+17, x-3]
-        get_pose = False
-        h = UpdateTransformation(t, get_pose, xy)
-        h.transformation
+    x = opencv()
+    _get_pose = True
+    xy = []
+    for a in range(-180, 180):
+        s = round( float( "{:.02f}".format( np.sin( np.radians(a) ) * 100 ) ) ) // 2
+        xy = [s, s, -a]
+        h = UpdateTransformation(xy, _get_pose)
+        x.display(h.transformation)
 
-wheelchair_pose()
+wheelchair_pose()'''
+
 '''
 #img = cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
 #rob = opencv()
@@ -197,6 +205,7 @@ wheelchair_pose()
 #rob.get_displacement(point, trans, angle, pivot)
 #rob.transform(trans, pivot)
 
+'''
 '''
 wheelChair_pos = []
 
