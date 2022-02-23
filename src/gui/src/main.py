@@ -52,6 +52,7 @@ class MainWindow(QMainWindow):
         Returns:
            (None)
         """
+        
         QMainWindow.__init__(self) # call the init for the parent class
         
         # Set up the UI window
@@ -65,13 +66,11 @@ class MainWindow(QMainWindow):
         #self.axis = MyFrame()
         self.initGUI()
 
-        # Create a timer and connect its signal to the QGLWidget update function
-        """
+        # Create a timer and connect its signal to wheelchair_pose to update
         timer = QtCore.QTimer(self)
-        timer.setInterval(20)   # period, in milliseconds
-        timer.timeout.connect(self.glWidget.updateGL)
+        timer.setInterval(100)   # period, in milliseconds
+        timer.timeout.connect(self.wheelchair_pose)
         timer.start()
-        """
 
         #apply_stylesheet(app, theme='dark_cyan.xml')
 
@@ -134,10 +133,6 @@ class MainWindow(QMainWindow):
         self.ui.joystickMode.setCheckable(True)
         self.ui.joystickMode.clicked.connect(lambda:self.driveModeSelection())
 
-    def callback(self, data):
-        self.punched.emit()
-        rospy.spin()
-
     def initGUI(self):
         """ Initialize the Qt GUI elements for the main window.
         
@@ -188,12 +183,12 @@ class MainWindow(QMainWindow):
         self._scene.addItem(robot)
         robot.setZValue(500)
         
-        self.cluster_pose()
+        """ self.cluster_pose()
         for cluster in self.cluster:
             self._scene.addItem(cluster)
             cluster.setZValue(500)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True) """
         
         #rospy.Subscriber("trigger", Int32, self.wheelchair_pose) #self.wheelchair_pose()
         self._scene.addItem(self._photo)
@@ -212,19 +207,15 @@ class MainWindow(QMainWindow):
 
     @QtCore.pyqtSlot()
     def wheelchair_pose(self):
-        print ("In wheelchair_pose!")
         _get_pose = True
         x = random.randint(0, 190)
         xy = [x, x+28, x]
         for a in range(-180, 180):
             s = round( float( "{:.02f}".format( np.sin( np.radians(a) ) * 100 ) ) ) // 2
-            #xy = [s, s, -a]
+            #xy = [(s+50), (s+50), -a]
         h = UpdateTransformation(xy, _get_pose)
         self.image = self.convert_cv_qt(h.transformation) #h.transformation) #self.rob)
         self.setPhoto(self.image)     
-
-        #h.transformation
-        #self.rob = self._cv.transform(h.transformation) #trans.transformation
 
     # Get cluster data from the TF buffer from semantic map(dbscan)
     def cluster_pose(self):
@@ -258,14 +249,7 @@ class MainWindow(QMainWindow):
 
     # Update the graphic window after changes
     def updateView(self):
-        #self.ui.graphicsView.setTransform(QtGui.QTransform().scale(self.zoom, self.zoom).rotate(self.angle))
-        transform = QtGui.QTransform()
-        transform.scale(self.zoom, self.zoom)
-        transform.rotate(0)
-        self.ui.graphicsView.setTransform(transform)
-        #self._photo.setTransformOriginPoint(QPointF(int(self.angle), int(self.angle)))
-        #self._photo.setPos(self.angle, self.angle)
-        #self.ui.graphicsView.mapFromScene(event.pos())
+        self.ui.graphicsView.setTransform(QtGui.QTransform().scale(self.zoom, self.zoom).rotate(0))
 
     # Initilization of map image
     def setPhoto(self, pixmap=None):
@@ -383,8 +367,5 @@ if __name__=="__main__":
     window = MainWindow()
     window.punched.connect(window.wheelchair_pose)
     
-    rospy.Subscriber("/trigger", Int32, window.callback)
-    
-
     window.show()
     sys.exit(app.exec_())

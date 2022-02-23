@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 
 from time import sleep
+import random
 import numpy as np
 import cv2
+
+import rospy
+from std_msgs.msg import Int32
 
 
 class UpdateTransformation:
@@ -41,7 +45,6 @@ class UpdateTransformation:
 
 
 class opencv():
-    
     def __init__(self):# Load the image
         # cv2.IMREAD_COLOR = 1
         # cv2.IMREAD_GRAYSCALE = 0
@@ -175,23 +178,32 @@ class opencv():
         while(1):
             #cv2.namedWindow('image', cv2.WINDOW_NORMAL)
             cv2.imshow('image', trans)
-            if not cv2.waitKey(1000) & 0xFF == 27:
+            if not cv2.waitKey(100) & 0xFF == 27:
                 break
         cv2.destroyAllWindows()
         
         return trans
 
-'''def wheelchair_pose():
+'''def wheelchair_pose(data):
     x = opencv()
     _get_pose = True
-    xy = []
-    for a in range(-180, 180):
-        s = round( float( "{:.02f}".format( np.sin( np.radians(a) ) * 100 ) ) ) // 2
-        xy = [s, s, -a]
-        h = UpdateTransformation(xy, _get_pose)
-        x.display(h.transformation)
+    y = random.randint(0, 190)
+    xy = [y, y+28, y]
+    # for a in range(-180, 180):
+    #     s = round( float( "{:.02f}".format( np.sin( np.radians(a) ) * 100 ) ) ) // 2
+    #     #xy = [s, s, -a]
+    # h = UpdateTransformation(xy, _get_pose)
+    # x.display(h.transformation)
+    
+    h = x.transform(xy)
+    x.display(h)'''
 
-wheelchair_pose()'''
+
+""" # ROS node initilization
+rospy.init_node('GUI_node', anonymous=True)
+
+rospy.Subscriber("/trigger", Int32, wheelchair_pose)
+rospy.spin() """
 
 '''
 #img = cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
