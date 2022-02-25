@@ -13,7 +13,7 @@ def trigger():
     
     rate = rospy.Rate(10) # 10hz
     while not rospy.is_shutdown():
-        x = 1
+        x = random.randint(1, 200)
         rospy.loginfo(x)
         pub.publish(x)
         rate.sleep()

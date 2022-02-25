@@ -184,27 +184,6 @@ class opencv():
         
         return trans
 
-'''def wheelchair_pose(data):
-    x = opencv()
-    _get_pose = True
-    y = random.randint(0, 190)
-    xy = [y, y+28, y]
-    # for a in range(-180, 180):
-    #     s = round( float( "{:.02f}".format( np.sin( np.radians(a) ) * 100 ) ) ) // 2
-    #     #xy = [s, s, -a]
-    # h = UpdateTransformation(xy, _get_pose)
-    # x.display(h.transformation)
-    
-    h = x.transform(xy)
-    x.display(h)'''
-
-
-""" # ROS node initilization
-rospy.init_node('GUI_node', anonymous=True)
-
-rospy.Subscriber("/trigger", Int32, wheelchair_pose)
-rospy.spin() """
-
 '''
 #img = cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
 #rob = opencv()
