@@ -1,59 +1,45 @@
 #!/usr/bin/env python
 
-#ROS imports
+# ROS imports
 import rospy
 from std_msgs.msg import Int16, Int32, String
 from geometry_msgs.msg import PointStamped
 import tf2_ros
 
-import sys 
-import os
+# Qt imports 
 from python_qt_binding.QtCore import QPropertyAnimation, Qt, QLineF, QPointF
 from python_qt_binding.QtGui import QColor, QPen 
 from python_qt_binding.QtWidgets import QApplication, QGraphicsDropShadowEffect, QMainWindow, QSizeGrip, QOpenGLWidget
 from python_qt_binding import QtOpenGL
-#from PySide2.QtWidgets import QApplication, QMainWindow, QGraphicsDropShadowEffect, QSizeGrip
 
-import OpenGL.GL as gl        # python wrapping of OpenGL
-from OpenGL import GLU        # OpenGL Utility Library, extends OpenGL functionality
-
-#import Qt Material for style sheet
-from qt_material import *
-
-#import GUI file
-from ui_interface import *
-
-from GItems import Graphicsscene
-import numpy as np
+# utils
 import cv2
-import random
+from qt_material import *
+from ui_interface import *
+from GItems import Graphicsscene
 from cv_transform import UpdateTransformation, opencv
 import worker
-#import GLMap
-#from GLMap import *
-#from cordPick import *
-#from smpxy import MyFrame
 
 
 class MainWindow(QMainWindow):
 
-    """
-    This class defines the Qt widget for the application, to which we add Qt widgets for
-    OpenGL graphics, user input, etc.
-    
+    """ This class defines the Qt widget for the application, to which we add Qt
+    widgets for graphics, user input, etc.
+
     """
     def __init__(self):
+        
         """ Initialize the Qt MainWindow.
-        
-        Initializes the Qt main window by setting up the window from Ui_interface, initializing the GLWidget,
-        adding GUI elements, creating a timed rendering loop and setting up signals and slot connections.
-        
+        Initializes the Mainwindow by setting up the window from Ui_interface,
+        QGraphic Widget, QThread for worker thread optional QTimer.
+
         Args:
             (None)
         Returns:
            (None)
+
         """
-        
+
         QMainWindow.__init__(self) # call the init for the parent class
         
         # Set up the UI window
@@ -82,12 +68,10 @@ class MainWindow(QMainWindow):
         # Connect Thread started signal to Worker operational slot method
         self.thread.started.connect(self.obj.qt_callback)
 
-        # Thread finished signal will close the app if you want!
-        #self.thread.finished.connect(app.exit)
-
         # Start the thread
         self.thread.start()
 
+        # Initilize the graphic widget
         self.initGUI()
 
         # Create a timer and connect its signal to wheelchair_pose to update
@@ -156,48 +140,54 @@ class MainWindow(QMainWindow):
         self.ui.joystickMode.clicked.connect(lambda:self.driveModeSelection())
 
     def initGUI(self):
-        """ Initialize the Qt GUI elements for the main window.
-        
-        Initializes the Qt main window GUI elements.  Sets up a central widget with a vertical
-        layout and adds the GLWidget followed by user input elements (sliders).
-        
+
+        """ Initialize the Qt graphical elements for the main window.
+
         Args:
             (None)
         Returns:
            (None)
-        
+
         """
+
         self.ui.graphicsView.setMouseTracking(True)
         self.ui.graphicsView.setTransformationAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.ui.graphicsView.setResizeAnchor(QtWidgets.QGraphicsView.AnchorUnderMouse)
         self.ui.graphicsView.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.ui.graphicsView.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
 
-        self.zoom = 1
-        self.angle = 20
+        self._zoom = 1
         self._empty = True
         self._scene = QtWidgets.QGraphicsScene()
         self._photo = QtWidgets.QGraphicsPixmapItem()
         self._view = Graphicsscene()
         self._cv = opencv()
-        
+
         robot = self._view.addRobot()
         self._scene.addItem(robot)
         robot.setZValue(500)
-        
+
         self.cluster_pose()
         for cluster in self.cluster:
             self._scene.addItem(cluster)
             cluster.setZValue(500)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
-        
+
         self._scene.addItem(self._photo)
         self.ui.graphicsView.setScene(self._scene)
 
     def convert_cv_qt(self, cv_img):
-        """Convert from an opencv image to QPixmap"""
-        
+
+        """ Convert from an opencv image to QPixmap
+
+        Args:
+            cv_img: OpenCV image
+        Returns:
+            OpenCV image converted to QPixmap format
+   
+        """
+
         rgb_image = cv2.cvtColor(cv_img, cv2.COLOR_BGR2RGB)
         height, width, channel = rgb_image.shape
         bytes_per_line = channel * width
@@ -205,15 +195,34 @@ class MainWindow(QMainWindow):
 
         return QtGui.QPixmap.fromImage(convert_to_Qt_format)
 
-    def wheelchair_pose(self, x):
+    def wheelchair_pose(self, pose):
+
+        """ Get odometry coordinates from ROS topic (name)
+
+        Args:
+            pose: List of [x, y, theta]
+        Returns:
+            (None)
+
+        """
+
         _get_pose = True
-        xy = [x, x+28, x]
+        xy = [pose, pose+28, pose]
         h = UpdateTransformation(xy, _get_pose)
         self.image = self.convert_cv_qt(h.transformation) #h.transformation) #self.rob)
         self.setPhoto(self.image)     
 
-    # Get cluster data from the TF buffer from semantic map(dbscan)
     def cluster_pose(self):
+
+        """ Get cluster coordinates from ROS
+
+        Args:
+            (None)
+        Returns:
+            Appends cluster coordinate to a list to render on graphic widget.
+
+        """
+
         i = 0
         get_pose = True
         self.cluster_list = []
@@ -238,16 +247,36 @@ class MainWindow(QMainWindow):
         
         self.cluster = self._view.cluster_obj(self.cluster_list)
     
-    # Map image is true/false
     def hasPhoto(self):
+
+        """ Checks if there is map image to be displayed. """
+
         return not self._empty  
 
-    # Update the graphic window after changes
     def updateView(self):
-        self.ui.graphicsView.setTransform(QtGui.QTransform().scale(self.zoom, self.zoom).rotate(0))
 
-    # Initilization of map image
+        """ Update method to set new transform (aspect ratio) after zoom, pan
+
+        Args:
+            (None)
+        Returns:
+            (None)
+
+        """
+
+        self.ui.graphicsView.setTransform(QtGui.QTransform().scale(self._zoom, self._zoom).rotate(0))
+
     def setPhoto(self, pixmap=None):
+
+        """ Method to set transformed map image for QGraphic widget.
+
+        Args:
+            pixmap: widgets used to display images.
+        Returns:
+            (None)
+
+        """
+
         if pixmap and not pixmap.isNull():
             self._empty = False
             self._photo.setPixmap(pixmap)
@@ -256,48 +285,80 @@ class MainWindow(QMainWindow):
             self._photo.setPixmap(QtGui.QPixmap())
         self.updateView()
 
-    # Capturing mouse wheel events to zoom in/out
     def wheelEvent(self, event):
+
+        """ Method to recive mouse wheel movements.
+
+        Args:
+            event: Mouse wheel occurrence
+        Returns:
+            (None)
+
+        """
+
         if self.hasPhoto():
             moose = event.angleDelta().y()/120
             if moose > 0:
                 self.zoomIn()
             elif moose < 0:
                 self.zoomOut()
-    
+
     def zoomIn(self):
+
+        """ Method to zoom-In on M-wheel-up movement."""
+
         self.zoom *= 1.05
         self.updateView()
 
     def zoomOut(self):
+
+        """ Method to zoom-In on M-wheel-down movement."""
+
         self.zoom /= 1.05
         self.updateView()
 
     def zoomReset(self):
+
+        """ Method to reset map image to initial scale."""
+
         self.zoom = 1
         self.updateView()
 
-    # To get the pixel cordinates from the map image
     def mouseEvent(self, event):
+
+        """ Method to recive mouse move movements.
+
+        Args:
+            event: Mouse movement occurrence
+        Returns:
+            (None)
+
+        """
+
         if self.hasPhoto:
             if self._photo.isUnderMouse() and event.buttons() == Qt.MiddleButton:
                 print(self.ui.graphicsView.mapToScene(event.pos()))#.toPoint())
 
-    # Rotate the map with respect to the pose frame orientation 
-    def rotate_item (self, value) :
-        self.angle = value 
-        #self.ui.graphicsView.mapToScene(event.pos())
-        self.updateView() 
-
     # Drag function         
     def toggleDragMode(self, event):
+
+        """ Method to pan zoomed map image bind to mouse move event.
+        Args:
+            event: Mouse movement occurrence
+        Returns:
+            (None)
+
+        """
+
         if self.ui.graphicsView.dragMode() == QtWidgets.QGraphicsView.ScrollHandDrag:
             self.ui.graphicsView.setDragMode(QtWidgets.QGraphicsView.NoDrag)
         elif not self._photo.pixmap().isNull():
             self.ui.graphicsView.setDragMode(QtWidgets.QGraphicsView.ScrollHandDrag)
-    
-    # Animation for menu button
+
     def menuAnimation(self):
+
+        """ Animation for menu button """
+
         width = self.ui.leftMenuList_frame.width()
         # if minimized
         if width == 40:
@@ -313,27 +374,42 @@ class MainWindow(QMainWindow):
         self.animation.setEndValue(extendWidth)
         self.animation.setEasingCurve(QtCore.QEasingCurve.InOutQuart)
         self.animation.start()
- 
-    # To obtain the X,y cordinates when mouse click 
+
     def mousePressEvent(self, event):
+
+        """ To obtain the X,y cordinates when mouse click """
+
         self.cursorPosition = event.globalPos()
 
-    # Maximize window function
     def restore_or_maximize_window(self):
+
+        """ Maximize window function """
+
         if self.isMaximized():
             self.showNormal()
         else:
             self.showMaximized()    
-    
-    # Publish the wheelChairSpeed value when user changes the speed 
+
     def pubSpeed(self, value):
+
+        """ Publish the wheelChairSpeed value when user changes the speed
+
+        Args:
+            value: Slider value from the UI
+        Returns:
+            (None)
+
+        """
+
         pub = rospy.Publisher('wheelChairSpeed', Int32, queue_size=10)
         rospy.loginfo(value)
         #print(value)
         pub.publish(value)
 
-    # Publish wheel chair drive mode 
     def driveModeSelection(self):
+
+        """ Publish wheel chair drive mode. """
+
         pub = rospy.Publisher('driveMode', String, queue_size=10)
         source = self.sender()
         if source == self.ui.autoMode:
@@ -342,6 +418,7 @@ class MainWindow(QMainWindow):
         else:
             rospy.loginfo("Joystick mode selected")
             pub.publish("Manual")
+
 
 if __name__=="__main__":
         

@@ -1,15 +1,10 @@
 #!/usr/bin/env python
 
-import rospy
-import tf2_ros
-import geometry_msgs.msg
-
 from python_qt_binding.QtWidgets import QGraphicsPixmapItem, QGraphicsScene
 from python_qt_binding import QtWidgets, QtGui, QtCore
 from python_qt_binding.QtCore import Qt, QRectF, QLineF, QPointF
 from python_qt_binding.QtGui import QImage, QPixmap, QPen
 from python_qt_binding.QtWidgets import QGraphicsScene, QGraphicsItem, QGraphicsItemGroup, QGraphicsLineItem
-#from cordPick import MouseTracker
 
 
 class Graphicsscene(object):

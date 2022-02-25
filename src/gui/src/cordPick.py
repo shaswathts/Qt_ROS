@@ -6,9 +6,6 @@ import rospy
 from geometry_msgs.msg import PointStamped
 from geometry_msgs.msg import Point, Quaternion
 
-#import GUI file
-from GLMap import *
-
 
 class MouseTracker(object):
     def __init__(self, x, y):
