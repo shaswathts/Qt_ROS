@@ -9,16 +9,16 @@ def trigger():
     pub = rospy.Publisher('trigger', Int32, queue_size=10)
     rospy.init_node('trigger', anonymous=True)
     
-    rate = rospy.Rate(10) # 10hz
+    rate = rospy.Rate(4) # 10hz
     while not rospy.is_shutdown():
-        x = random.randint(1, 190)
+        #x = random.randint(1, 190)
 
-        """  x = np.arange(0,4*np.pi,0.1)   # start,stop,step
-        y = np.sin(x) """
+        for a in range(-180, 180):
+            s = round( float( "{:.02f}".format( np.sin( np.radians(a) ) * 100 ) ) ) // 2
 
-        rospy.loginfo(x)
-        pub.publish(x)
-        rate.sleep()
+            rospy.loginfo(-s+2)
+            pub.publish(-s+2)
+            rate.sleep()
 
 if __name__ == '__main__':
 

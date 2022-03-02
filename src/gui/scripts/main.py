@@ -164,18 +164,18 @@ class MainWindow(QMainWindow):
         self._view = Graphicsscene()
         self._cv = opencv()
 
-        robot = self._view.addRobot()
+        """ robot = self._view.addRobot()
         self._scene.addItem(robot)
-        robot.setZValue(500)
+        robot.setZValue(500) """
 
         self._scene.addItem(self._photo)
         
         self.cluster_pose()
-        for cluster in self.cluster:
+        """ for cluster in self.cluster:
             self._scene.addItem(cluster)
             cluster.setZValue(500)
             cluster.setFlag(QtWidgets.QGraphicsItem.ItemIsSelectable, True)
-            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True)
+            cluster.setFlag(QtWidgets.QGraphicsItem.ItemSendsGeometryChanges, True) """
 
         self.ui.graphicsView.setScene(self._scene)
 
@@ -209,21 +209,20 @@ class MainWindow(QMainWindow):
         """
 
         _get_pose = True
-        xy = [pose, pose, pose]
+        self.touch_list = [] # For checking if touch inputs are within the radius 
+        xy = [pose+50, -pose, pose]
         h = UpdateTransformation(xy, _get_pose)
-        self.image = self.convert_cv_qt(h.transformation) #h.transformation) #self.rob)
-        self.setPhoto(self.image)
-        new_list = []
-        for ncluster in self.cluster_list:
-            new_p = [ncluster[0], ncluster[1]]
-            q = UpdateTransformation(xy, False, new_p)
-            #print(q.transformation[:, 2:3])
-            new = q.transformation[:, 2:3]
-            new_list.append(new[0][0])
-            new_list.append(new[1][0])
-            print(new_list)
-            self.cluster = self._view.cluster_obj(new_list)
 
+        # Passing transformed image to update the cluster position w.r.t wheelchair displacement 
+        for points in self.clusterList:
+            points.append(0)
+            q = UpdateTransformation(xy, False, points)
+            y = [q.transformation[0][0], q.transformation[1][0]]
+            self.touch_list.append(y)
+            cluster_image = self._cv.draw(h.transformation, self.touch_list)
+
+        self.image = self.convert_cv_qt(cluster_image) #h.transformation) #self.rob)
+        self.setPhoto(self.image)
 
     def cluster_pose(self):
 
@@ -238,7 +237,10 @@ class MainWindow(QMainWindow):
 
         i = 0
         get_pose = True
-        self.cluster_list = []
+        get_displacement = False
+        self.cluster_list = [] # List of cluster points from tf
+        self.clusterList = [] # List of cluster points after transforming w.r.t origin
+        origin = [116.0, 182.0]
         pix_scale = 37 #rospy.get_param('pixel_scale')
 
         tfBuffer = tf2_ros.Buffer()
@@ -258,8 +260,16 @@ class MainWindow(QMainWindow):
         trans2 = tfBuffer.lookup_transform("map", "d435_color_optical_frame", rospy.Time(0), rospy.Duration(5))
         self.cluster_list.append([trans2.transform.translation.x * pix_scale, trans2.transform.translation.y * pix_scale])
         
-        #self.cluster = self._view.cluster_obj(self.cluster_list)
-    
+        # Set clustert pose w.r.t center of image
+        for point in self.cluster_list:
+            point.append(0)
+            x = UpdateTransformation(point, get_displacement, origin)
+            y = [x.transformation[0][0], x.transformation[1][0]]
+            self.clusterList.append(y)
+            """ print(self.clusterList) """
+
+        self.cluster = self._view.cluster_obj(self.clusterList)
+
     def hasPhoto(self):
 
         """ Checks if there is map image to be displayed. """
@@ -353,7 +363,7 @@ class MainWindow(QMainWindow):
             if self._photo.isUnderMouse() and event.buttons() == Qt.MiddleButton:
                 pos_x = self.ui.graphicsView.mapToScene(event.pos()).x()
                 pos_y = self.ui.graphicsView.mapToScene(event.pos()).y()
-                for cluster in self.cluster_list:
+                for cluster in self.touch_list:
                     center_x = cluster[0]
                     center_y = cluster[1]
                     cluster = int(pow((pos_x - center_x), 2)) + int(pow((pos_y - center_y), 2)) < int(pow(radius, 2))

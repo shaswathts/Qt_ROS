@@ -6,13 +6,25 @@ import cv2
 
 class UpdateTransformation:
 
-    def __init__(self, transformation=[0, 0, 0], displacement=False, pre_xy=[]):
+    def __init__(self, transformation=[0, 0, 0], transform=False, pre_xy=[]):
         self.transformation = transformation
         self._trans = opencv()
-        self._pos = displacement
+        self._pos = transform
         self.pre_xy = pre_xy
 
     def return_displacement(self):
+
+        """ Method to get transformed OpenCV image if transform is False
+        else just get the displacement for a given coordinates
+
+        Args:
+            (None)
+        Returns:
+           _img: Transformed OpenCV image
+           _shift: Transformed OpenCV image for cluster points
+
+        """
+
         if self._pos:
             _img = self._trans.transform(self._transformation)
             return _img
@@ -23,12 +35,32 @@ class UpdateTransformation:
     # Getter method
     @property
     def transformation(self):
-        x = self.return_displacement()
-        return x #self._transformation 
+
+        """ Method to get transformed OpenCV image
+
+        Args:
+            (None)
+        Returns:
+           openCV_image: Transformed OpenCV image
+
+        """
+
+        openCV_image = self.return_displacement()
+        return openCV_image 
 
     # Setter method
     @transformation.setter
     def transformation(self, value):
+
+        """ Method to set new transforms
+
+        Args:
+            value: List of [x, y, theta] coordinates
+        Returns:
+           (None)
+
+        """
+
         if value[0] > 190:
             raise ValueError("outside map boundary!")
         self._transformation = value
@@ -36,14 +68,26 @@ class UpdateTransformation:
 
 class opencv():
 
+    """ This class defines the map image manipulation in OpenCV. """
+
     def __init__(self):# Load the image
         # cv2.IMREAD_COLOR = 1
         # cv2.IMREAD_GRAYSCALE = 0
         # cv2.IMREAD_UNCHANGED = -1
         self.image = cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
 
-    # To create a Homgeneous matrix 
+    # To create a  
     def set(self, rotation, translation):
+
+        """ Method to create a Homgeneous matrix
+
+        Args:
+            rotation: 2 x 2 matrix
+            translation: 2 x 1 matrix
+        Returns:
+           mat: 3 x 3 matrix
+
+        """
 
         mat = np.block([
                         [rotation, translation.reshape(2,1)],
@@ -53,27 +97,52 @@ class opencv():
         return mat
 
     # Drawing clusters 
-    def draw(self, img, cluster_list, robot_pos):
-        #cluster_list = [[180.0, 170.0], [200.0, 170.0]]
-        #cluster_list = [[130.0, 120.0], [150.0, 120.0]]
+    def draw(self, img, cluster_list):
+
+        """ Draw marker for cluster position on the transformed image. 
+
+        Args:
+            img: Transformed OpenCV image
+            robot_pos: List of [x, y] coordinates
+        Returns:
+           rob: OpenCV image with marker for cluster position
+
+        """
+
         for cluster in cluster_list:
-            rob = cv2.drawMarker(img , (int(cluster[0]), int(cluster[1])), (0, 255, 0), cv2.MARKER_TRIANGLE_UP,
-                                        markerSize=10, thickness=2, line_type=cv2.LINE_AA)
+            rob = cv2.drawMarker(img , (int(cluster[0]), int(cluster[1])), (0, 255, 0), cv2.MARKER_DIAMOND,
+                                        markerSize=10, thickness=3, line_type=cv2.LINE_AA)
 
         return rob
 
     # This will always be the center of the map to get the perspective view  
     def draw_rob(self, img, robot_pos=[190, 190]):
+
+        """ Draw marker for wheelchair position on the transformed image. 
+
+        Args:
+            img: Transformed OpenCV image
+            robot_pos: List of [x, y] coordinates
+        Returns:
+           rob: OpenCV image with marker for wheelchair position
+
+        """
+
         rob = cv2.drawMarker(img , (int(robot_pos[0]), int(robot_pos[1])), (0, 255, 0), cv2.MARKER_TRIANGLE_UP,
                                         markerSize=10, thickness=2, line_type=cv2.LINE_AA)
         return rob
 
     def translate(self, img, robot_pos):
 
-        '''
-        This matrices will translate a given map image to a new (x,y) position, while keeping the 
-        wheelchair static.
-        '''
+        """ Translate a given map image to a new (x,y) position.
+
+        Args:
+            img: OpenCV image
+            robot_pos: List of [x, y] coordinates
+        Returns:
+           rob: Translated OpenCV image  
+
+        """
 
         rows,cols = img.shape
         shiftx, shifty = 0, 0
@@ -92,10 +161,17 @@ class opencv():
 
     def rotate(self, img, angle, pivot):
         
-        '''
-        This matrices rotate a given map image in the counter or clockwise direction by an angle θ,
+        """ Rotate a given map image in the counter or clockwise direction by an angle θ,
         where the rotation pivot point will always be from the perspective of wheelchair.
-        '''
+
+        Args:
+            img: OpenCV image
+            angle: Rotation in degrees 
+            pivot: Center of Rotation
+        Returns:
+           rob: Rotated OpenCV image  
+
+        """
 
         (rows,cols) = img.shape
 
@@ -122,6 +198,9 @@ class opencv():
 
         #robot_pos=[190, 190] # Focus/perspective point of the map 
 
+        image = self.image
+        rows, cols = image.shape
+
         mat_Dxy = np.array([[pre[0]],
                             [pre[1]]
                         ])
@@ -132,7 +211,7 @@ class opencv():
 
         mat_Rid = np.identity(2)
 
-        pivot=[0, 0]
+        pivot=[rows/2, cols/2]
         matR = cv2.getRotationMatrix2D((int(pivot[0]),int(pivot[1])), trans[2], 1) # mat_Rth = self.rotation_m
         mat_Rth = np.block([
             [matR],
@@ -144,9 +223,9 @@ class opencv():
         matrixA = self.set(mat_Rid, mat_Dxy)
 
         matrixC = np.dot(matrixT, matrixA)
-        print ("Homogeneous def:\n", matrixC)
+        #print ("Homogeneous def:\n", matrixC[:, 2:3])
 
-        return matrixC
+        return matrixC[:, 2:3]
 
     def transform(self, trans_vector, center=[116.0, 182.0]):
 
@@ -160,9 +239,7 @@ class opencv():
 
         """
 
-        cluster_list = [[180.0, 170.0], [200.0, 170.0]] # Get this cluster data list from the camera 
-
-         # Update translation position if there is displacement in (x,y) and if there is no rotation 
+        # Update translation position if there is displacement in (x,y) and if there is no rotation 
         if trans_vector[2] == 0:
 
             trans = self.translate(self.image, trans_vector)
@@ -180,16 +257,22 @@ class opencv():
 
             return trans
 
-    def display(self, trans):
+    def display(self, image):
+
+        """ Method to display OpenCV image
+
+        Args:
+            image: OpenCV image
+        Returns:
+           (None)
+
+        """
 
         while(1):
             cv2.namedWindow('image', cv2.WINDOW_NORMAL)
-            cv2.imshow('image', trans)
+            cv2.imshow('image', image)
             if not cv2.waitKey(0) & 0xFF == 27:
                 break
         cv2.destroyAllWindows()
 
-        return trans
-
-""" x = opencv()
-x.estimate_touch() """
+        # return image # testing

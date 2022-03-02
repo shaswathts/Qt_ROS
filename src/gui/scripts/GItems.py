@@ -49,7 +49,7 @@ class Graphicsscene(object):
 
         elipse_list = []
 
-        """ for cluster in cluster_list:
+        for cluster in cluster_list:
 
             elipse = QtWidgets.QGraphicsEllipseItem(0, 0, 2, 2)
             elipse.setPos(cluster[0], cluster[1])  
@@ -59,20 +59,9 @@ class Graphicsscene(object):
             pen.setWidth(5)
             elipse.setPen(pen)
             elipse_list.append(elipse)
-            print('Cluster in pixel ; '+str(cluster[0])+ ' '+ str(cluster[1])) """
+            print('Cluster in pixel ; '+str(cluster[0])+ ' '+ str(cluster[1]))
 
-        elipse = QtWidgets.QGraphicsEllipseItem(0, 0, 2, 2)
-        elipse.setPos(cluster_list[0], cluster_list[1])  
-        brush = QtGui.QBrush(Qt.GlobalColor.blue)
-        elipse.setBrush(brush)
-        pen = QPen(Qt.GlobalColor.green)
-        pen.setWidth(5)
-        elipse.setPen(pen)
-        elipse_list.append(elipse)
-        #print('Cluster in pixel ; '+str(cluster_list[0])+ ' '+ str(cluster_list[1]))        
-        
         return elipse_list
-        
     
 
 """
