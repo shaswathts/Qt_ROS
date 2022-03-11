@@ -1,16 +1,32 @@
 #!/usr/bin/env python
 
+import rospy
+
+import warnings
+from collections import deque
 import numpy as np
 import cv2
 
 
 class UpdateTransformation:
 
-    def __init__(self, transformation=[0, 0, 0], transform=False, pre_xy=[]):
+    def __init__(self, map=None, transformation=[0, 0, 0], transform=False, pre_xy=[]):
+        
+        if map is not None:
+            mapImage = map
+        else:
+            mapImage = cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
+            warnings.warn("Map read from source !!")
+
+        #self.buffer = deque([], 10)
+        #self.buffer.append(mapImage)
+        #self.image = self.buffer.popleft
+        
+        self._trans = opencv(mapImage)
         self.transformation = transformation
-        self._trans = opencv()
         self._pos = transform
         self.pre_xy = pre_xy
+        
 
     def return_displacement(self):
 
@@ -61,8 +77,6 @@ class UpdateTransformation:
 
         """
 
-        if value[0] > 190:
-            raise ValueError("outside map boundary!")
         self._transformation = value
 
 
@@ -70,15 +84,14 @@ class opencv():
 
     """ This class defines the map image manipulation in OpenCV. """
 
-    def __init__(self):# Load the image
+    def __init__(self, image=None):# Load the image
         # cv2.IMREAD_COLOR = 1
         # cv2.IMREAD_GRAYSCALE = 0
-        # cv2.IMREAD_UNCHANGED = -1
-        self.image = cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
+        # cv2.IMREAD_UNCHANGED = -1 
+        self.image = image #cv2.imread("/home/intern/adapt_Pyrqt/src/smp_gui/src/second_map.pgm", cv2.IMREAD_UNCHANGED)
 
-    # To create a  
     def set(self, rotation, translation):
-
+ 
         """ Method to create a Homgeneous matrix
 
         Args:
@@ -116,7 +129,7 @@ class opencv():
         return rob
 
     # This will always be the center of the map to get the perspective view  
-    def draw_rob(self, img, robot_pos=[190, 190]):
+    def draw_rob(self, img):
 
         """ Draw marker for wheelchair position on the transformed image. 
 
@@ -128,7 +141,8 @@ class opencv():
 
         """
 
-        rob = cv2.drawMarker(img , (int(robot_pos[0]), int(robot_pos[1])), (0, 255, 0), cv2.MARKER_TRIANGLE_UP,
+        rows,cols = img.shape
+        rob = cv2.drawMarker(img , (int(rows/2), int(cols/2)), (0, 255, 0), cv2.MARKER_TRIANGLE_UP,
                                         markerSize=10, thickness=2, line_type=cv2.LINE_AA)
         return rob
 
@@ -175,7 +189,7 @@ class opencv():
 
         (rows,cols) = img.shape
 
-        rotation_m = cv2.getRotationMatrix2D((int(pivot[0]),int(pivot[1])), angle[2], 1)
+        rotation_m = cv2.getRotationMatrix2D((rows/2, cols/2), angle[2], 1)
         rob = cv2.warpAffine(img, rotation_m, (cols,rows))
         #print("Rotation matrix :\n", rotation_m) #self.rotation_m[:2, :2])
 
@@ -198,7 +212,7 @@ class opencv():
 
         #robot_pos=[190, 190] # Focus/perspective point of the map 
 
-        image = self.image
+        image = self.image #self.image
         rows, cols = image.shape
 
         mat_Dxy = np.array([[pre[0]],

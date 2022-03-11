@@ -3,11 +3,13 @@
 # ROS imports
 import rospy
 from std_msgs.msg import Int16, Int32, String
+from sensor_msgs.msg import Image
 from geometry_msgs.msg import PointStamped
 import tf2_ros
+from cv_bridge import CvBridge
 
 # Qt imports 
-from python_qt_binding.QtCore import QPropertyAnimation, Qt, QLineF, QPointF
+from python_qt_binding.QtCore import QPropertyAnimation, Qt, pyqtSignal, QObject
 from python_qt_binding.QtGui import QColor, QPen 
 from python_qt_binding.QtWidgets import QApplication, QGraphicsDropShadowEffect, QMainWindow, QSizeGrip, QOpenGLWidget
 from python_qt_binding import QtOpenGL
@@ -16,13 +18,16 @@ from python_qt_binding import QtOpenGL
 import cv2
 from qt_material import *
 from ui_interface import *
-from GItems import Graphicsscene
+from graphic_items import Graphicsscene
 from cv_transform import UpdateTransformation, opencv
 import worker
 import cordPick
 
 
-class MainWindow(QMainWindow):
+class Signal(QObject):
+    mapSignal = pyqtSignal(object)
+
+class MainWindow(QMainWindow, QObject):
 
     """ This class defines the Qt widget for the application, to which we add Qt
     widgets for graphics, user input, etc.
@@ -42,35 +47,36 @@ class MainWindow(QMainWindow):
         """
 
         QMainWindow.__init__(self) # call the init for the parent class
-        
+
+        self.chair_speed_publisher = rospy.Publisher('wheelChairSpeed', Int32, queue_size=10)
+        self.chair_drive_mode = rospy.Publisher('driveMode', String, queue_size=10)
+
         # Set up the UI window
         self.ui = Ui_MainWindow()
-        self.ui.setupUi(self) 
-
-        # Set up the OpenGL window
-        #self.glWidget = GLWidget(self)
-        #self.initGUI()
-
-        #self.axis = MyFrame()
+        self.ui.setupUi(self)
 
         # create Worker and Thread inside the MainWindow class
         self.obj = worker.Worker()  # no parent!
         self.thread = QtCore.QThread()  # no parent!
 
         # Connect Worker`s Signals to MainWindow method slots to post data.
-        self.obj.intReady.connect(self.wheelchair_pose)
+        self.obj.signal2.connect(self.getImage) #self.read_image)
+        self.obj.signal1.connect(self.wheelchair_pose)
+        self.obj.signal3.connect(self.battery_status)
+        self.obj.signal4.connect(self.chair_info)
 
         # Move the Worker object to the Thread object
         self.obj.moveToThread(self.thread)
 
         # Connect Worker Signals to the Thread slots
+        self.ui.close_window_button.clicked.connect(self.thread.quit)
         self.obj.finished.connect(self.thread.quit)
 
         # Connect Thread started signal to Worker operational slot method
-        self.thread.started.connect(self.obj.qt_callback)
+        #self.thread.started.connect(self.obj.qt_callback)
 
-        # Start the thread
-        self.thread.start()
+        # Start the threadNone
+        self.thread.start() 
 
         # Initilize the graphic widget
         self.initGUI()
@@ -140,6 +146,9 @@ class MainWindow(QMainWindow):
         self.ui.joystickMode.setCheckable(True)
         self.ui.joystickMode.clicked.connect(lambda:self.driveModeSelection())
 
+        # Initilize the graphic widget
+        self.initGUI()
+
     def initGUI(self):
 
         """ Initialize the Qt graphical elements for the main window.
@@ -159,6 +168,7 @@ class MainWindow(QMainWindow):
 
         self._zoom = 1
         self._empty = True
+        self._image = None
         self._scene = QtWidgets.QGraphicsScene()
         self._photo = QtWidgets.QGraphicsPixmapItem()
         self._view = Graphicsscene()
@@ -197,6 +207,10 @@ class MainWindow(QMainWindow):
 
         return QtGui.QPixmap.fromImage(convert_to_Qt_format)
 
+    def getImage(self, image):
+        self._image = image
+        rospy.loginfo("Map Updated")
+
     def wheelchair_pose(self, pose):
 
         """ Get odometry coordinates from ROS topic (name)
@@ -208,18 +222,16 @@ class MainWindow(QMainWindow):
 
         """
 
-        _get_pose = True
-        self.touch_list = [] # For checking if touch inputs are within the radius 
-        xy = [pose+50, -pose, pose]
-        h = UpdateTransformation(xy, _get_pose)
+        self.touch_list = [] # For checking if touch inputs are within the radius
+        h = UpdateTransformation(self._image, pose, True)
 
         # Passing transformed image to update the cluster position w.r.t wheelchair displacement 
         for points in self.clusterList:
             points.append(0)
-            q = UpdateTransformation(xy, False, points)
+            q = UpdateTransformation(self._image, pose, False, points)
             y = [q.transformation[0][0], q.transformation[1][0]]
             self.touch_list.append(y)
-            cluster_image = self._cv.draw(h.transformation, self.touch_list)
+            cluster_image = self._cv.draw(h.transformation, self.touch_list) # Drawing cluster points on transformed image
 
         self.image = self.convert_cv_qt(cluster_image) #h.transformation) #self.rob)
         self.setPhoto(self.image)
@@ -240,8 +252,9 @@ class MainWindow(QMainWindow):
         get_displacement = False
         self.cluster_list = [] # List of cluster points from tf
         self.clusterList = [] # List of cluster points after transforming w.r.t origin
-        origin = [116.0, 182.0]
-        pix_scale = 37 #rospy.get_param('pixel_scale')
+        #row, col = self._image.shape
+        origin = [116, 182]
+        pix_scale = 1 #rospy.get_param('pixel_scale')
 
         tfBuffer = tf2_ros.Buffer()
         listener = tf2_ros.TransformListener(tfBuffer)
@@ -263,7 +276,7 @@ class MainWindow(QMainWindow):
         # Set clustert pose w.r.t center of image
         for point in self.cluster_list:
             point.append(0)
-            x = UpdateTransformation(point, get_displacement, origin)
+            x = UpdateTransformation(self._image, point, get_displacement, origin)
             y = [x.transformation[0][0], x.transformation[1][0]]
             self.clusterList.append(y)
             """ print(self.clusterList) """
@@ -349,7 +362,8 @@ class MainWindow(QMainWindow):
 
     def mouseEvent(self, event):
 
-        """ Method to publish touch events.
+        """ Method to publish touch events and determine if the touch inputs
+        lies inside the radius of the cluster.
 
         Args:
             event: Mouse movement occurrence
@@ -363,15 +377,17 @@ class MainWindow(QMainWindow):
             if self._photo.isUnderMouse() and event.buttons() == Qt.MiddleButton:
                 pos_x = self.ui.graphicsView.mapToScene(event.pos()).x()
                 pos_y = self.ui.graphicsView.mapToScene(event.pos()).y()
+                cluster_number = len(self.touch_list)
                 for cluster in self.touch_list:
+                    cluster_number = cluster_number-1
                     center_x = cluster[0]
                     center_y = cluster[1]
                     cluster = int(pow((pos_x - center_x), 2)) + int(pow((pos_y - center_y), 2)) < int(pow(radius, 2))
                     print("Estimating touch: ", cluster, "for", center_x, center_y)
                     if cluster:
-                        cordPick.MouseTracker(center_x, center_y)
+                        cordPick.MouseTracker(center_x, center_y,cluster_number)
                     else:
-                        cordPick.MouseTracker(pos_x, pos_y)
+                        cordPick.MouseTracker(pos_x, pos_y,cluster_number)
 
     # Drag function         
     def toggleDragMode(self, event):
@@ -434,25 +450,33 @@ class MainWindow(QMainWindow):
             (None)
 
         """
-
-        pub = rospy.Publisher('wheelChairSpeed', Int32, queue_size=10)
+ 
         rospy.loginfo(value)
-        #print(value)
-        pub.publish(value)
+        self.chair_speed_publisher.publish(value)
 
     def driveModeSelection(self):
 
         """ Publish wheel chair drive mode. """
 
-        pub = rospy.Publisher('driveMode', String, queue_size=10)
         source = self.sender()
         if source == self.ui.autoMode:
             rospy.loginfo("Auto mode selected")
-            pub.publish("Auto")
+            self.chair_drive_mode.publish("Auto")
         else:
             rospy.loginfo("Joystick mode selected")
-            pub.publish("Manual")
+            self.chair_drive_mode.publish("Manual")
 
+    def battery_status(self, battery_health):
+        self.ui.display_batterStatus.setText("Hola")
+        self.ui.display_batteryCharge.setText()
+        self.ui.battery_TimeLeft.setText()
+        self.ui.battery_pluggedIn
+
+    def chair_info(self, data):
+        self.ui.display_Uptime.setText()
+        self.ui.display_distanceDriven.setText()
+        self.ui.display_networkStatus.setText()
+        self.ui.display_version.setText()
 
 if __name__=="__main__":
         
@@ -463,4 +487,5 @@ if __name__=="__main__":
     
     window = MainWindow()
     window.show()
+    
     sys.exit(app.exec_())
